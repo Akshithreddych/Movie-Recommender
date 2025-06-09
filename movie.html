@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Movie Recommender</title>
+    <style>
+        body { background-color: #0a0a0a; color: white; font-family: 'Arial', sans-serif; margin: 0; padding: 0; }
+        h1 { text-align: center; font-size: 2.5em; margin: 20px 0; text-transform: uppercase; }
+        .container { width: 90%; margin: auto; display: flex; flex-wrap: wrap; justify-content: center; }
+        .movie { background-color: #1c1c1c; padding: 15px; margin: 15px; border-radius: 10px; width: 220px; text-align: center; box-shadow: 0px 0px 15px rgba(255, 255, 255, 0.1); transition: transform 0.3s; }
+        .movie:hover { transform: scale(1.05); box-shadow: 0px 0px 20px rgba(255, 255, 255, 0.3); }
+        .movie img { width: 100%; height: 300px; border-radius: 10px; object-fit: cover; }
+        select, button { display: block; width: 80%; margin: 10px auto; padding: 10px; border-radius: 5px; border: none; font-size: 1em; }
+        select { background-color: #333; color: white; }
+        button { background-color: #e50914; color: white; cursor: pointer; }
+        button:hover { background-color: #b20710; }
+        p { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>Movie Recommender</h1>
+
+    <select id="genre">
+        <option value="">Select Genre</option>
+        <option value="Action">Action</option>
+        <option value="Comedy">Comedy</option>
+        <option value="Drama">Drama</option>
+        <option value="Sci-Fi">Sci-Fi</option>
+        <option value="Horror">Horror</option>
+        <option value="Thriller/Mystery">Thriller/Mystery</option>
+        <option value="Romance">Romance</option>
+        <option value="Adventure">Adventure</option>
+        <option value="Family/Animated">Family/Animated</option>
+    </select>
+
+    <select id="sortBy">
+        <option value="">Sort By (IMDb, Length, Fan Favorite)</option>
+        <option value="imdb">IMDb Rating (High to Low)</option>
+        <option value="length">Length (Short to Long)</option>
+        <option value="fan">Fan Favorite (High to Low)</option>
+    </select>
+
+    <button onclick="filterAndSortMovies()">Apply</button>
+
+    <div class="container" id="movieContainer"></div>
+
+    <script>
+        const movies = [
+            // Action
+            {"title": "Die Hard", "genre": "Action", "imdb": 8.2, "length": 132, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/mX3ndg4gU7sI0uG88t8b5xM103L.jpg"},
+            {"title": "Raiders of the Lost Ark", "genre": "Action", "imdb": 8.4, "length": 115, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/ceG9NfP4S4P7r0M4S2F0P1Wp0b0.jpg"},
+            {"title": "The Dark Knight", "genre": "Action", "imdb": 9.0, "length": 152, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg"},
+            {"title": "Terminator 2: Judgment Day", "genre": "Action", "imdb": 8.5, "length": 137, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/b5x2S92d3vR5Nf73966c4q5iE3j.jpg"},
+            {"title": "Gladiator", "genre": "Action", "imdb": 8.5, "length": 155, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/rm2qB2x0Kj2Hh4Z1J944wKjB4tB.jpg"},
+            {"title": "Mad Max: Fury Road", "genre": "Action", "imdb": 8.1, "length": 120, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/8tZYtuWezp8JbcsvHYO0O46tFbo.jpg"},
+            {"title": "John Wick", "genre": "Action", "imdb": 7.4, "length": 101, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/9Xw0I5RV2ZqNLpul6lXKoviYg55.jpg"},
+            {"title": "The Matrix", "genre": "Sci-Fi", "imdb": 8.7, "length": 136, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"},
+            {"title": "Mission: Impossible - Fallout", "genre": "Action", "imdb": 7.7, "length": 147, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/AkJQpZp9WoNdj7pLYSj1L0RcMMN.jpg"},
+            {"title": "The Hurt Locker", "genre": "Action", "imdb": 7.6, "length": 131, "fan": 7, "image": "https://image.tmdb.org/t/p/w500/bRPO3r3LnQxWZkhcpJnoQ4TA0EE.jpg"},
+
+            // Comedy
+            {"title": "The Hangover", "genre": "Comedy", "imdb": 7.7, "length": 100, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/kIPeN1J4qD89F5J1wMh7pY9X0n5.jpg"},
+            {"title": "Anchorman: The Legend of Ron Burgundy", "genre": "Comedy", "imdb": 7.2, "length": 94, "fan": 7, "image": "https://image.tmdb.org/t/p/w500/3bXx6wDBnqecqfSZGH0Zh7dtbNr.jpg"},
+            {"title": "21 Jump Street", "genre": "Comedy", "imdb": 7.2, "length": 109, "fan": 7, "image": "https://image.tmdb.org/t/p/w500/bi2nl3hx76fbfw9kZESXy6hU6p.jpg"},
+            {"title": "Knocked Up", "genre": "Comedy", "imdb": 6.9, "length": 129, "fan": 7, "image": "https://image.tmdb.org/t/p/w500/6mbp5qvMuXPS4TwbM0yGr2D39nt.jpg"},
+            {"title": "Office Space", "genre": "Comedy", "imdb": 7.7, "length": 89, "fan": 7, "image": "https://image.tmdb.org/t/p/w500/9U8qAMaQlP7Omn74vJzS72mDa09.jpg"},
+            {"title": "Airplane!", "genre": "Comedy", "imdb": 7.7, "length": 88, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/iHMX0o4DsmL7JStLzp9d5i7pYBJ.jpg"},
+            {"title": "Monty Python and the Holy Grail", "genre": "Comedy", "imdb": 8.2, "length": 91, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg"},
+            {"title": "The King of Comedy", "genre": "Comedy", "imdb": 7.8, "length": 109, "fan": 7, "image": "https://image.tmdb.org/t/p/w500/qOsVq8u2N0qfZL6R3k7tAmPehbK.jpg"},
+            {"title": "The Wolf of Wall Street", "genre": "Comedy", "imdb": 8.2, "length": 180, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/pWHf4khOloNVfCxscsXFj3jj6gP.jpg"},
+            {"title": "This is Spinal Tap", "genre": "Comedy", "imdb": 7.9, "length": 82, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/bq2fWjAqZqv0YcVzmthMjq0B08Z.jpg"},
+
+            // Drama
+            {"title": "The Shawshank Redemption", "genre": "Drama", "imdb": 9.3, "length": 142, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg"},
+            {"title": "Schindler's List", "genre": "Drama", "imdb": 8.9, "length": 195, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/c8Ass7acuOe4za6DhSattE359gr.jpg"},
+            {"title": "The Godfather", "genre": "Drama", "imdb": 9.2, "length": 175, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/eEslKSwcqmiNS6va24Pbxf2UKmJ.jpg"},
+            {"title": "Titanic", "genre": "Romance", "imdb": 7.9, "length": 195, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg"},
+            {"title": "Pulp Fiction", "genre": "Drama", "imdb": 8.9, "length": 154, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg"},
+            {"title": "The Godfather: Part II", "genre": "Drama", "imdb": 9.0, "length": 202, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/bVq65huQ8vHDd1a4Z37QtuyEvpA.jpg"},
+            {"title": "12 Angry Men", "genre": "Drama", "imdb": 9.0, "length": 96, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/3W0v956XxSG5xgm7LB6qu8ExYJ2.jpg"},
+            {"title": "Casablanca", "genre": "Romance", "imdb": 8.5, "length": 102, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/h5VQ4fF6iqm75RjhfiXCOXRcROq.jpg"},
+            {"title": "Rocky", "genre": "Drama", "imdb": 8.1, "length": 120, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/wnUAcUrMRGPPZUDroLeZhSjL9yV.jpg"},
+
+            // Sci-Fi
+            {"title": "Star Wars: Episode IV - A New Hope", "genre": "Sci-Fi", "imdb": 8.6, "length": 121, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/6FfCtAuVAW8XJjZ7eWeLibRLWTw.jpg"},
+            {"title": "2001: A Space Odyssey", "genre": "Sci-Fi", "imdb": 8.3, "length": 149, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/4U9G4YwTlIEb4kYF8C9raGsqOBF.jpg"},
+            {"title": "Alien", "genre": "Sci-Fi", "imdb": 8.5, "length": 117, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/iDPlOwNAck6KlMyUdA0Q0P2BH2m.jpg"},
+            {"title": "E.T. the Extra-Terrestrial", "genre": "Sci-Fi", "imdb": 7.8, "length": 115, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/4Rzoa9QkxOAyNfWlHh5AAgcV9hQ.jpg"},
+            {"title": "Blade Runner", "genre": "Sci-Fi", "imdb": 8.1, "length": 117, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/2eS9Gq7V07kGahB0OD6KIVb5q2j.jpg"},
+            {"title": "Arrival", "genre": "Sci-Fi", "imdb": 7.9, "length": 116, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg"},
+            {"title": "Interstellar", "genre": "Sci-Fi", "imdb": 8.6, "length": 169, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg"},
+            {"title": "Gravity", "genre": "Sci-Fi", "imdb": 7.7, "length": 91, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/uZ8Vj1WQVu2yQ8fhg5YrckSu9r3.jpg"},
+            {"title": "Fight Club", "genre": "Sci-Fi", "imdb": 8.8, "length": 139, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/bptfVGEQuv6vDTIMVCHjJ9Dz8PX.jpg"},
+
+            // Horror
+            {"title": "The Exorcist", "genre": "Horror", "imdb": 8.0, "length": 122, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/5ik4ATKmNtmJU6AYD0bLm56BCVM.jpg"},
+            {"title": "Psycho", "genre": "Horror", "imdb": 8.5, "length": 109, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/81d8oyEFgj7FlxJqSDXWr8JH8kV.jpg"},
+            {"title": "The Ring", "genre": "Horror", "imdb": 7.1, "length": 115, "fan": 7, "image": "https://image.tmdb.org/t/p/w500/6w1NEaR9fslZR0pzOZb5KwHtJBo.jpg"},
+            {"title": "Halloween", "genre": "Horror", "imdb": 7.7, "length": 91, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/w0eoFoGVxv8dPJ2xyiz2AOo6O0k.jpg"},
+            {"title": "The Shining", "genre": "Horror", "imdb": 8.4, "length": 146, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/sfM7BgJYq9J9n5Qd2rS2KpnF4Yv.jpg"},
+            {"title": "It", "genre": "Horror", "imdb": 7.3, "length": 135, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/wqlB5OAAVeA6C0Krxz4I5D59Kip.jpg"},
+            {"title": "A Nightmare on Elm Street", "genre": "Horror", "imdb": 7.5, "length": 91, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/eUzTtHyTZ41M8CmqYV4LkZ6h3vL.jpg"},
+
+            // Thriller/Mystery
+            {"title": "Se7en", "genre": "Thriller/Mystery", "imdb": 8.6, "length": 127, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/69Sns8WoET6CfaYlIkHbla4l7nC.jpg"},
+            {"title": "Gone Girl", "genre": "Thriller/Mystery", "imdb": 8.1, "length": 149, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/2v7wXQUxhgHoQy2eKWN7aAQIy6N.jpg"},
+            {"title": "The Silence of the Lambs", "genre": "Thriller/Mystery", "imdb": 8.6, "length": 118, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/rplLJ2hPcOQmkFhTqUte0MkEaO2.jpg"},
+            {"title": "Memento", "genre": "Thriller/Mystery", "imdb": 8.4, "length": 113, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/fQMSaP88cf1nz4qwuNEEFtazuDM.jpg"},
+            {"title": "Shutter Island", "genre": "Thriller/Mystery", "imdb": 8.2, "length": 138, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/9yBVqNruk6Ykrwc32qrK2TIE5xw.jpg"},
+
+            // Romance
+            {"title": "The Notebook", "genre": "Romance", "imdb": 7.8, "length": 123, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/q8LGrsFX3KP3gRtTL5my9z8LXhM.jpg"},
+            {"title": "La La Land", "genre": "Romance", "imdb": 8.0, "length": 128, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/uDO8zWDhfWwoFdKS4fzkUJt0Rf0.jpg"},
+            {"title": "Pride & Prejudice", "genre": "Romance", "imdb": 7.8, "length": 129, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/nNHXdgMdpl4Vjpr5Bbyv5y6m4Yh.jpg"},
+
+            // Adventure
+            {"title": "The Lord of the Rings: The Fellowship of the Ring", "genre": "Adventure", "imdb": 8.8, "length": 178, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg"},
+            {"title": "Jurassic Park", "genre": "Adventure", "imdb": 8.1, "length": 127, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/c414cDeQ9b6qLPLeKmiJuLDUREJ.jpg"},
+            {"title": "Pirates of the Caribbean: The Curse of the Black Pearl", "genre": "Adventure", "imdb": 8.0, "length": 143, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/3dHNOWTNb9x7rkp0Jrl9Nqv7pCX.jpg"},
+
+            // Family/Animated
+            {"title": "Toy Story", "genre": "Family/Animated", "imdb": 8.3, "length": 81, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg"},
+            {"title": "Finding Nemo", "genre": "Family/Animated", "imdb": 8.1, "length": 100, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/eHuGQ1SO4Y4eN0uB8N42rXQfQvF.jpg"},
+            {"title": "The Lion King", "genre": "Family/Animated", "imdb": 8.5, "length": 88, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/sKCr78MXSLixwmZ8DyJLrpMsd15.jpg"}
+        ];
+
+        const movieContainer = document.getElementById('movieContainer');
+        const genreSelect = document.getElementById('genre');
+        const sortBySelect = document.getElementById('sortBy');
+
+        function displayMovies(movieArray) {
+            movieContainer.innerHTML = ''; // Clear previous movies
+            movieArray.forEach(movie => {
+                const movieDiv = document.createElement('div');
+                movieDiv.classList.add('movie');
+                movieDiv.innerHTML = `
+                    <img src="${movie.image}" alt="${movie.title}">
+                    <h3>${movie.title}</h3>
+                    <p><strong>Genre:</strong> ${movie.genre}</p>
+                    <p><strong>IMDb:</strong> ${movie.imdb}</p>
+                    <p><strong>Length:</strong> ${movie.length} mins</p>
+                    <p><strong>Fan Favorite:</strong> ${movie.fan}/10</p>
+                `;
+                movieContainer.appendChild(movieDiv);
+            });
+        }
+
+        function filterAndSortMovies() {
+            let filteredMovies = [...movies]; // Create a copy to avoid modifying the original array
+
+            const selectedGenre = genreSelect.value;
+            if (selectedGenre) {
+                filteredMovies = filteredMovies.filter(movie => movie.genre === selectedGenre);
+            }
+
+            const sortBy = sortBySelect.value;
+            if (sortBy) {
+                if (sortBy === 'imdb') {
+                    filteredMovies.sort((a, b) => b.imdb - a.imdb); // High to Low
+                } else if (sortBy === 'length') {
+                    filteredMovies.sort((a, b) => a.length - b.length); // Short to Long
+                } else if (sortBy === 'fan') {
+                    filteredMovies.sort((a, b) => b.fan - a.fan); // High to Low
+                }
+            }
+
+            displayMovies(filteredMovies);
+        }
+
+        // Initial display of all movies
+        displayMovies(movies);
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html>
+<head>
+    <title>Movie Recommender</title>
+    <style>
+        body { background-color: #0a0a0a; color: white; font-family: 'Arial', sans-serif; margin: 0; padding: 0; }
+        h1 { text-align: center; font-size: 2.5em; margin: 20px 0; text-transform: uppercase; }
+        .container { width: 90%; margin: auto; display: flex; flex-wrap: wrap; justify-content: center; }
+        .movie { background-color: #1c1c1c; padding: 15px; margin: 15px; border-radius: 10px; width: 220px; text-align: center; box-shadow: 0px 0px 15px rgba(255, 255, 255, 0.1); transition: transform 0.3s; }
+        .movie:hover { transform: scale(1.05); box-shadow: 0px 0px 20px rgba(255, 255, 255, 0.3); }
+        .movie img { width: 100%; height: 300px; border-radius: 10px; object-fit: cover; }
+        select, button { display: block; width: 80%; margin: 10px auto; padding: 10px; border-radius: 5px; border: none; font-size: 1em; }
+        select { background-color: #333; color: white; }
+        button { background-color: #e50914; color: white; cursor: pointer; }
+        button:hover { background-color: #b20710; }
+        p { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>Movie Recommender</h1>
+
+    <select id="genre">
+        <option value="">Select Genre</option>
+        <option value="Action">Action</option>
+        <option value="Comedy">Comedy</option>
+        <option value="Drama">Drama</option>
+        <option value="Sci-Fi">Sci-Fi</option>
+        <option value="Horror">Horror</option>
+        <option value="Thriller/Mystery">Thriller/Mystery</option>
+        <option value="Romance">Romance</option>
+        <option value="Adventure">Adventure</option>
+        <option value="Family/Animated">Family/Animated</option>
+    </select>
+
+    <select id="sortBy">
+        <option value="">Sort By (IMDb, Length, Fan Favorite)</option>
+        <option value="imdb">IMDb Rating (High to Low)</option>
+        <option value="length">Length (Short to Long)</option>
+        <option value="fan">Fan Favorite (High to Low)</option>
+    </select>
+
+    <button onclick="filterAndSortMovies()">Apply</button>
+
+    <div class="container" id="movieContainer"></div>
+
+    <script>
+        const movies = [
+            // Action
+            {"title": "Die Hard", "genre": "Action", "imdb": 8.2, "length": 132, "fan": 8, "image": "https://resizing.flixster.com/4uMRStWZiVgShCGo_ywlOGfK9jA=/ems.cHJkLWVtcy1hc3NldHMvbW92aWVzLzdjMzI5NWU3LTEyNTUtNDRlNC04ZWYxLThlMzZiNDE3YTMxOC5wbmc="},
+            {"title": "Raiders of the Lost Ark", "genre": "Action", "imdb": 8.4, "length": 115, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/ceG9NfP4S4P7r0M4S2F0P1Wp0b0.jpg"},
+            {"title": "The Dark Knight", "genre": "Action", "imdb": 9.0, "length": 152, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg"},
+            {"title": "Terminator 2: Judgment Day", "genre": "Action", "imdb": 8.5, "length": 137, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/b5x2S92d3vR5Nf73966c4q5iE3j.jpg"},
+            {"title": "Gladiator", "genre": "Action", "imdb": 8.5, "length": 155, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/rm2qB2x0Kj2Hh4Z1J944wKjB4tB.jpg"},
+            {"title": "Mad Max: Fury Road", "genre": "Action", "imdb": 8.1, "length": 120, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/8tZYtuWezp8JbcsvHYO0O46tFbo.jpg"},
+            {"title": "John Wick", "genre": "Action", "imdb": 7.4, "length": 101, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/9Xw0I5RV2ZqNLpul6lXKoviYg55.jpg"},
+            {"title": "The Matrix", "genre": "Sci-Fi", "imdb": 8.7, "length": 136, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"},
+            {"title": "Mission: Impossible - Fallout", "genre": "Action", "imdb": 7.7, "length": 147, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/AkJQpZp9WoNdj7pLYSj1L0RcMMN.jpg"},
+            {"title": "The Hurt Locker", "genre": "Action", "imdb": 7.6, "length": 131, "fan": 7, "image": "https://image.tmdb.org/t/p/w500/bRPO3r3LnQxWZkhcpJnoQ4TA0EE.jpg"},
+
+            // Comedy
+            {"title": "The Hangover", "genre": "Comedy", "imdb": 7.7, "length": 100, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/kIPeN1J4qD89F5J1wMh7pY9X0n5.jpg"},
+            {"title": "Anchorman: The Legend of Ron Burgundy", "genre": "Comedy", "imdb": 7.2, "length": 94, "fan": 7, "image": "https://image.tmdb.org/t/p/w500/3bXx6wDBnqecqfSZGH0Zh7dtbNr.jpg"},
+            {"title": "21 Jump Street", "genre": "Comedy", "imdb": 7.2, "length": 109, "fan": 7, "image": "https://image.tmdb.org/t/p/w500/bi2nl3hx76fbfw9kZESXy6hU6p.jpg"},
+            {"title": "Knocked Up", "genre": "Comedy", "imdb": 6.9, "length": 129, "fan": 7, "image": "https://image.tmdb.org/t/p/w500/6mbp5qvMuXPS4TwbM0yGr2D39nt.jpg"},
+            {"title": "Office Space", "genre": "Comedy", "imdb": 7.7, "length": 89, "fan": 7, "image": "https://image.tmdb.org/t/p/w500/9U8qAMaQlP7Omn74vJzS72mDa09.jpg"},
+            {"title": "Airplane!", "genre": "Comedy", "imdb": 7.7, "length": 88, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/iHMX0o4DsmL7JStLzp9d5i7pYBJ.jpg"},
+            {"title": "Monty Python and the Holy Grail", "genre": "Comedy", "imdb": 8.2, "length": 91, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg"},
+            {"title": "The King of Comedy", "genre": "Comedy", "imdb": 7.8, "length": 109, "fan": 7, "image": "https://image.tmdb.org/t/p/w500/qOsVq8u2N0qfZL6R3k7tAmPehbK.jpg"},
+            {"title": "The Wolf of Wall Street", "genre": "Comedy", "imdb": 8.2, "length": 180, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/pWHf4khOloNVfCxscsXFj3jj6gP.jpg"},
+            {"title": "This is Spinal Tap", "genre": "Comedy", "imdb": 7.9, "length": 82, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/bq2fWjAqZqv0YcVzmthMjq0B08Z.jpg"},
+
+            // Drama
+            {"title": "The Shawshank Redemption", "genre": "Drama", "imdb": 9.3, "length": 142, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg"},
+            {"title": "Schindler's List", "genre": "Drama", "imdb": 8.9, "length": 195, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/c8Ass7acuOe4za6DhSattE359gr.jpg"},
+            {"title": "The Godfather", "genre": "Drama", "imdb": 9.2, "length": 175, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/eEslKSwcqmiNS6va24Pbxf2UKmJ.jpg"},
+            {"title": "Titanic", "genre": "Romance", "imdb": 7.9, "length": 195, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg"},
+            {"title": "Pulp Fiction", "genre": "Drama", "imdb": 8.9, "length": 154, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg"},
+            {"title": "The Godfather: Part II", "genre": "Drama", "imdb": 9.0, "length": 202, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/bVq65huQ8vHDd1a4Z37QtuyEvpA.jpg"},
+            {"title": "12 Angry Men", "genre": "Drama", "imdb": 9.0, "length": 96, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/3W0v956XxSG5xgm7LB6qu8ExYJ2.jpg"},
+            {"title": "Casablanca", "genre": "Romance", "imdb": 8.5, "length": 102, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/h5VQ4fF6iqm75RjhfiXCOXRcROq.jpg"},
+            {"title": "Rocky", "genre": "Drama", "imdb": 8.1, "length": 120, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/wnUAcUrMRGPPZUDroLeZhSjL9yV.jpg"},
+
+            // Sci-Fi
+            {"title": "Star Wars: Episode IV - A New Hope", "genre": "Sci-Fi", "imdb": 8.6, "length": 121, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/6FfCtAuVAW8XJjZ7eWeLibRLWTw.jpg"},
+            {"title": "2001: A Space Odyssey", "genre": "Sci-Fi", "imdb": 8.3, "length": 149, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/4U9G4YwTlIEb4kYF8C9raGsqOBF.jpg"},
+            {"title": "Alien", "genre": "Sci-Fi", "imdb": 8.5, "length": 117, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/iDPlOwNAck6KlMyUdA0Q0P2BH2m.jpg"},
+            {"title": "E.T. the Extra-Terrestrial", "genre": "Sci-Fi", "imdb": 7.8, "length": 115, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/4Rzoa9QkxOAyNfWlHh5AAgcV9hQ.jpg"},
+            {"title": "Blade Runner", "genre": "Sci-Fi", "imdb": 8.1, "length": 117, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/2eS9Gq7V07kGahB0OD6KIVb5q2j.jpg"},
+            {"title": "Arrival", "genre": "Sci-Fi", "imdb": 7.9, "length": 116, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg"},
+            {"title": "Interstellar", "genre": "Sci-Fi", "imdb": 8.6, "length": 169, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg"},
+            {"title": "Gravity", "genre": "Sci-Fi", "imdb": 7.7, "length": 91, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/uZ8Vj1WQVu2yQ8fhg5YrckSu9r3.jpg"},
+            {"title": "Fight Club", "genre": "Sci-Fi", "imdb": 8.8, "length": 139, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/bptfVGEQuv6vDTIMVCHjJ9Dz8PX.jpg"},
+
+            // Horror
+            {"title": "The Exorcist", "genre": "Horror", "imdb": 8.0, "length": 122, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/5ik4ATKmNtmJU6AYD0bLm56BCVM.jpg"},
+            {"title": "Psycho", "genre": "Horror", "imdb": 8.5, "length": 109, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/81d8oyEFgj7FlxJqSDXWr8JH8kV.jpg"},
+            {"title": "The Ring", "genre": "Horror", "imdb": 7.1, "length": 115, "fan": 7, "image": "https://image.tmdb.org/t/p/w500/6w1NEaR9fslZR0pzOZb5KwHtJBo.jpg"},
+            {"title": "Halloween", "genre": "Horror", "imdb": 7.7, "length": 91, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/w0eoFoGVxv8dPJ2xyiz2AOo6O0k.jpg"},
+            {"title": "The Shining", "genre": "Horror", "imdb": 8.4, "length": 146, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/sfM7BgJYq9J9n5Qd2rS2KpnF4Yv.jpg"},
+            {"title": "It", "genre": "Horror", "imdb": 7.3, "length": 135, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/wqlB5OAAVeA6C0Krxz4I5D59Kip.jpg"},
+            {"title": "A Nightmare on Elm Street", "genre": "Horror", "imdb": 7.5, "length": 91, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/eUzTtHyTZ41M8CmqYV4LkZ6h3vL.jpg"},
+
+            // Thriller/Mystery
+            {"title": "Se7en", "genre": "Thriller/Mystery", "imdb": 8.6, "length": 127, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/69Sns8WoET6CfaYlIkHbla4l7nC.jpg"},
+            {"title": "Gone Girl", "genre": "Thriller/Mystery", "imdb": 8.1, "length": 149, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/2v7wXQUxhgHoQy2eKWN7aAQIy6N.jpg"},
+            {"title": "The Silence of the Lambs", "genre": "Thriller/Mystery", "imdb": 8.6, "length": 118, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/rplLJ2hPcOQmkFhTqUte0MkEaO2.jpg"},
+            {"title": "Memento", "genre": "Thriller/Mystery", "imdb": 8.4, "length": 113, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/fQMSaP88cf1nz4qwuNEEFtazuDM.jpg"},
+            {"title": "Shutter Island", "genre": "Thriller/Mystery", "imdb": 8.2, "length": 138, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/9yBVqNruk6Ykrwc32qrK2TIE5xw.jpg"},
+
+            // Romance
+            {"title": "The Notebook", "genre": "Romance", "imdb": 7.8, "length": 123, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/q8LGrsFX3KP3gRtTL5my9z8LXhM.jpg"},
+            {"title": "La La Land", "genre": "Romance", "imdb": 8.0, "length": 128, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/uDO8zWDhfWwoFdKS4fzkUJt0Rf0.jpg"},
+            {"title": "Pride & Prejudice", "genre": "Romance", "imdb": 7.8, "length": 129, "fan": 8, "image": "https://image.tmdb.org/t/p/w500/nNHXdgMdpl4Vjpr5Bbyv5y6m4Yh.jpg"},
+
+            // Adventure
+            {"title": "The Lord of the Rings: The Fellowship of the Ring", "genre": "Adventure", "imdb": 8.8, "length": 178, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg"},
+            {"title": "Jurassic Park", "genre": "Adventure", "imdb": 8.1, "length": 127, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/c414cDeQ9b6qLPLeKmiJuLDUREJ.jpg"},
+            {"title": "Pirates of the Caribbean: The Curse of the Black Pearl", "genre": "Adventure", "imdb": 8.0, "length": 143, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/3dHNOWTNb9x7rkp0Jrl9Nqv7pCX.jpg"},
+
+            // Family/Animated
+            {"title": "Toy Story", "genre": "Family/Animated", "imdb": 8.3, "length": 81, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg"},
+            {"title": "Finding Nemo", "genre": "Family/Animated", "imdb": 8.1, "length": 100, "fan": 9, "image": "https://image.tmdb.org/t/p/w500/eHuGQ1SO4Y4eN0uB8N42rXQfQvF.jpg"},
+            {"title": "The Lion King", "genre": "Family/Animated", "imdb": 8.5, "length": 88, "fan": 10, "image": "https://image.tmdb.org/t/p/w500/sKCr78MXSLixwmZ8DyJLrpMsd15.jpg"}
+        ];
+
+        const movieContainer = document.getElementById('movieContainer');
+        const genreSelect = document.getElementById('genre');
+        const sortBySelect = document.getElementById('sortBy');
+
+        function displayMovies(movieArray) {
+            movieContainer.innerHTML = ''; // Clear previous movies
+            movieArray.forEach(movie => {
+                const movieDiv = document.createElement('div');
+                movieDiv.classList.add('movie');
+                movieDiv.innerHTML = `
+                    <img src="${movie.image}" alt="${movie.title}">
+                    <h3>${movie.title}</h3>
+                    <p><strong>Genre:</strong> ${movie.genre}</p>
+                    <p><strong>IMDb:</strong> ${movie.imdb}</p>
+                    <p><strong>Length:</strong> ${movie.length} mins</p>
+                    <p><strong>Fan Favorite:</strong> ${movie.fan}/10</p>
+                `;
+                movieContainer.appendChild(movieDiv);
+            });
+        }
+
+        function filterAndSortMovies() {
+            let filteredMovies = [...movies]; // Create a copy to avoid modifying the original array
+
+            const selectedGenre = genreSelect.value;
+            if (selectedGenre) {
+                filteredMovies = filteredMovies.filter(movie => movie.genre === selectedGenre);
+            }
+
+            const sortBy = sortBySelect.value;
+            if (sortBy) {
+                if (sortBy === 'imdb') {
+                    filteredMovies.sort((a, b) => b.imdb - a.imdb); // High to Low
+                } else if (sortBy === 'length') {
+                    filteredMovies.sort((a, b) => a.length - b.length); // Short to Long
+                } else if (sortBy === 'fan') {
+                    filteredMovies.sort((a, b) => b.fan - a.fan); // High to Low
+                }
+            }
+
+            displayMovies(filteredMovies);
+        }
+
+        // Initial display of all movies
+        displayMovies(movies);
+    </script>
+</body>
+</html>
