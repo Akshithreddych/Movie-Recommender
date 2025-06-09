@@ -1,4 +1,4 @@
-🎬 Movie Recommender
+🎬 Movie Recommender 🍿
 Find your next favorite movie! This app lets you quickly browse and sort films based on your preferences.
 
 ✨ Features
@@ -18,3 +18,5 @@ JavaScript
 Add a search bar.
 Integrate a movie API for more films.
 Let users save favorites.
+🤝 Contributing
+Got ideas or found a bug? Open an issue or submit a pull request!
